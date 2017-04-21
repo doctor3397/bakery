@@ -1,7 +1,13 @@
 <h1>Shopify Back End Development Problem</h1>
 
+<h2>Cookie Orders</h2>
 <p><%#= @result["available_cookies"] %></p>
 <% @orders.each do |order| %>
   <p><%= order %><p>
 <% end %>
+
+<h2>Remaining Cookies</h2>
 <p><%= @available_cookies %></p>
+
+<h2>Unfulfilled Orders</h2>
+<p><%= @unfulfilled_orders %></p>

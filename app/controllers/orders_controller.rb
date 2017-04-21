@@ -38,12 +38,12 @@ class OrdersController < ApplicationController
 
     # Check every Cookie order with the amount of cookie
     # If an order has an amount of cookies bigger than the remaining cookies, skip the order.
-    unfulfilled_orders = []
+    @unfulfilled_orders = []
     @orders.each do |order|
       if order[:product]["amount"] <= @available_cookies
         @available_cookies -= order[:product]["amount"]
       else
-        unfulfilled_orders << order[:id]
+        @unfulfilled_orders << order[:id]
       end
     end
 
@@ -53,7 +53,7 @@ class OrdersController < ApplicationController
       format.json do render json:
         {
           "remaining_cookies": @available_cookies,
-          "unfulfilled_orders": unfulfilled_orders
+          "unfulfilled_orders": @unfulfilled_orders
         }
       end
       format.html
