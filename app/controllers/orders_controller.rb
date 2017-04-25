@@ -5,24 +5,18 @@ class OrdersController < ApplicationController
 
   def index
 
-    @available_cookies = nil
     @orders = []
-    i = 1
 
     # Read all orders from the paginated API.
-    while true
-      result = Net::HTTP.get(URI.parse("https://backend-challenge-fall-2017.herokuapp.com/orders.json?page=#{i}"))
-      result = JSON.parse(result)
+    results = get_paginated_orders
 
-      break if result["orders"].length == 0
-
-      # Setting orders and remove any order without cookies
+    # Setting cookie orders and remove any order without cookies
+    results.each do |result|
       @orders +=  get_cookie_orders(result)
-
-      # Get the available_cookies
-      @available_cookies = result["available_cookies"] if @available_cookies == nil
-      i += 1
     end
+
+    # Get the available_cookies
+    @available_cookies = results[0]["available_cookies"]
 
     # Prioritize fulfilling orders with the highest amount of cookies.
     # If orders have the same amount of cookies, prioritize the order with the lowest ID.
@@ -45,6 +39,33 @@ class OrdersController < ApplicationController
 end
 
 private
+
+def get_paginated_orders
+  i = 1
+  results = []
+  while true
+    result = Net::HTTP.get(URI.parse("https://backend-challenge-fall-2017.herokuapp.com/orders.json?page=#{i}"))
+    results << JSON.parse(result)
+
+    break if results[i-1]["orders"].length == 0
+    i += 1
+  end
+  return results
+end
+
+def get_cookie_orders(result)
+  orders = []
+  result["orders"].each do |order|
+    order["products"].each do |product|
+      if product["title"].include?("Cookie")
+        orders << { "id": order["id"],
+                     "product": product }
+      end
+    end
+  end
+  return orders
+end
+
 def sort_by_cookie_amount(orders)
   orders.sort! do |a, b|
     b[:product]["amount"] <=> a[:product]["amount"]
@@ -61,17 +82,4 @@ def get_unfulfilled_cookie_orders(orders, available_cookies)
     end
   end
   return unfulfilled_orders, available_cookies
-end
-
-def get_cookie_orders(result)
-  orders = []
-  result["orders"].each do |order|
-    order["products"].each do |product|
-      if product["title"].include?("Cookie")
-        orders << { "id": order["id"],
-                     "product": product }
-      end
-    end
-  end
-  return orders
 end
