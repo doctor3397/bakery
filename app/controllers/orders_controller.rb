@@ -16,8 +16,8 @@ class OrdersController < ApplicationController
 
       break if result["orders"].length == 0
 
-      # Remove any order without cookies
-      get_cookie_orders(@orders, result)
+      # Setting orders and remove any order without cookies
+      @orders +=  get_cookie_orders(result)
 
       # Get the available_cookies
       @available_cookies = result["available_cookies"] if @available_cookies == nil
@@ -30,16 +30,7 @@ class OrdersController < ApplicationController
 
     # Check every Cookie order with the amount of cookie
     # If an order has an amount of cookies bigger than the remaining cookies, skip the order.
-    @unfulfilled_orders = []
-    # check_cookie_orders(@orders, @available_cookies, @unfulfilled_orders)
-    @orders.each do |order|
-      if order[:product]["amount"] <= @available_cookies
-        @available_cookies -= order[:product]["amount"]
-      else
-        @unfulfilled_orders << order[:id]
-      end
-    end
-    p @available_cookies
+    @unfulfilled_orders, @available_cookies = get_unfulfilled_cookie_orders(@orders, @available_cookies)
 
     respond_to do |format|
       format.json do render json:
@@ -60,7 +51,8 @@ def sort_by_cookie_amount(orders)
   end
 end
 
-def check_cookie_orders(orders, available_cookies, unfulfilled_orders)
+def get_unfulfilled_cookie_orders(orders, available_cookies)
+  unfulfilled_orders = []
   orders.each do |order|
     if order[:product]["amount"] <= available_cookies
       available_cookies -= order[:product]["amount"]
@@ -68,15 +60,18 @@ def check_cookie_orders(orders, available_cookies, unfulfilled_orders)
       unfulfilled_orders << order[:id]
     end
   end
+  return unfulfilled_orders, available_cookies
 end
 
-def get_cookie_orders(orders, result)
+def get_cookie_orders(result)
+  orders = []
   result["orders"].each do |order|
     order["products"].each do |product|
       if product["title"].include?("Cookie")
-        @orders << { "id": order["id"],
+        orders << { "id": order["id"],
                      "product": product }
       end
     end
   end
+  return orders
 end
